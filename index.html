@@ -1,0 +1,103 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Khalive - Watch & Upload</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #111; color: white; text-align: center; }
+    .container { padding: 20px; max-width: 600px; margin: auto; }
+    .video-card { margin: 20px 0; background: #222; padding: 15px; border-radius: 10px; }
+    video { max-width: 100%; border-radius: 10px; }
+    input, button { padding: 10px; margin: 10px 0; width: 100%; border: none; border-radius: 5px; }
+    button { background: #00bcd4; color: white; font-weight: bold; cursor: pointer; }
+  </style>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Khalive - Watch & Upload</h1><!-- Sign Up/Login -->
+<input type="email" id="email" placeholder="Email">
+<input type="password" id="password" placeholder="Password">
+<button onclick="signUp()">Sign Up</button>
+<button onclick="login()">Login</button>
+<button onclick="logout()">Logout</button>
+
+<!-- Upload -->
+<input type="file" id="videoUpload" accept="video/*">
+<button onclick="uploadVideo()">Upload Video</button>
+
+<h3>Uploaded Videos</h3>
+<div id="videoList"></div>
+
+  </div>  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyABtxxWDWPq_T08ekC9EkLpuLpN5R13gTA",
+      authDomain: "globalpay-tdxzu.firebaseapp.com",
+      projectId: "globalpay-tdxzu",
+      storageBucket: "globalpay-tdxzu.appspot.com",
+      messagingSenderId: "511186803807",
+      appId: "1:511186803807:web:185b0f71809144b1b2cfea"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    function signUp() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(() => alert('Signed Up'))
+        .catch(e => alert(e.message));
+    }
+
+    function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => alert('Logged In'))
+        .catch(e => alert(e.message));
+    }
+
+    function logout() {
+      auth.signOut().then(() => alert('Logged Out'));
+    }
+
+    function uploadVideo() {
+      const file = document.getElementById('videoUpload').files[0];
+      if (!file) return alert('Please select a video');
+      const storageRef = storage.ref('videos/' + file.name);
+      storageRef.put(file).then(snapshot => {
+        snapshot.ref.getDownloadURL().then(url => {
+          db.collection('videos').add({ url, name: file.name, time: Date.now() });
+          alert('Upload Successful');
+        });
+      });
+    }
+
+    function loadVideos() {
+      db.collection('videos').orderBy('time', 'desc').onSnapshot(snapshot => {
+        const videoList = document.getElementById('videoList');
+        videoList.innerHTML = '';
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          videoList.innerHTML += `
+            <div class="video-card">
+              <video controls src="${data.url}"></video>
+              <p>${data.name}</p>
+            </div>
+          `;
+        });
+      });
+    }
+
+    auth.onAuthStateChanged(user => {
+      if (user) loadVideos();
+    });
+  </script></body>
+</html>
